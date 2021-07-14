@@ -46,7 +46,7 @@ class DuiTangAlbum:
             await self.queue_image.put(1)
             asyncio.create_task(self.task_image(obj['id']))
         # 后续没有图片的情况
-        if not data['more']:
+        if len(data['object_list']) == 0:
             self.has_more_source = False
         await self.queue_source.get()
         self.queue_source.task_done()
@@ -68,6 +68,7 @@ class DuiTangAlbum:
         filename = os.path.basename(url)
         async with self.session.get(url) as resp:
             with open(os.path.join(self.save_path, filename), 'wb') as fd:
+                print(filename)
                 while chunk := await resp.content.read(chunk_size):
                     fd.write(chunk)
 
