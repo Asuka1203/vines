@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 
-from lib import common
+from library import common
 
 
 class DuiTangAlbum:

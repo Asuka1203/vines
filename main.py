@@ -1,7 +1,7 @@
 import sys
 
 from engine.duitang_album import DuiTangAlbum
-from lib import common
+from library import common
 
 
 if __name__ == '__main__':
