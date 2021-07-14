@@ -1,12 +1,9 @@
 import sys
 
-import asyncio
-
-from src.duitang_album import DuiTangAlbum
+from engine.duitang_album import DuiTangAlbum
+from lib import common
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        DuiTangAlbum(sys.argv[1], r'E:/学习/表情包').start()
-    )
+    target = common.Target(sys.argv[1], sys.argv[2])
+    common.invoke(DuiTangAlbum, target)
