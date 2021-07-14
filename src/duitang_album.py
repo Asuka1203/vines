@@ -5,13 +5,13 @@ import asyncio
 
 
 class DuiTangAlbum:
-    session = aiohttp.ClientSession()
-    queue_source = asyncio.Queue(maxsize=15)
-    queue_image = asyncio.Queue(maxsize=25)
     has_more_source = True
     pre_page = 24
 
     def __init__(self, album_id, save_path):
+        self.session = aiohttp.ClientSession()
+        self.queue_source = asyncio.Queue(maxsize=15)
+        self.queue_image = asyncio.Queue(maxsize=25)
         self.save_path = save_path
         self.URL = f'https://www.duitang.com/napi/album/detail/?album_id={album_id}'
         self.URL_SOURCE = f'https://www.duitang.com/napi/blog/list/by_album/?album_id={album_id}'
