@@ -34,10 +34,18 @@ def get_file_storage(
         filename = os.path.basename(url)
         async with session.get(url) as resp:
             with open(os.path.join(destination, filename), 'wb') as fd:
-                print(filename)
                 while chunk := await resp.content.read(chunk_size):
                     fd.write(chunk)
     return _runner
+
+
+async def save_file(session, url, destination):
+    filename = os.path.basename(url)
+    async with session.get(url) as resp:
+        print(os.path.join(destination, filename))
+        with open(os.path.join(destination, filename), 'wb') as fd:
+            while chunk := await resp.content.read(1024):
+                fd.write(chunk)
 
 
 def invoke(engine):

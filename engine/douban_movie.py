@@ -2,6 +2,7 @@ import asyncio
 import math
 import os
 import re
+import time
 
 import aiohttp
 import bs4
@@ -49,15 +50,6 @@ class DoubanMovie:
         self.session = aiohttp.ClientSession(headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Referer': 'https://accounts.douban.com/'
-        }, cookies={
-            'push_doumail_num': '0',
-            'push_noty_num': 0,
-            '_pk_ses.100001.4cf6': '*',
-            '_pk_ref.100001.4cf6': '%5B%22%22%2C%22%22%2C1626367316%2C%22https%3A%2F%2Faccounts.douban.com%2F%22%5D',
-            '__utmc': '30149280',
-            '__utmz': '30149280.1626367316.1.1.utmcsr=accounts.douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/',
-            'dbcl2': '"115982146:qjSslmchsY0"',
-            'bid': 'zTUtcsgl7nA'
         })
         self.file_storage = common.get_file_storage(self.session, destination)
         self.subject_page_lock = common.ConcurrencyLock(6)
@@ -104,10 +96,17 @@ class DoubanMovie:
                 dirname = os.path.join(self.destination, title)
                 os.makedirs(dirname, exist_ok=True)
                 await self.subject_page_lock.acquire()
-                asyncio.create_task(self.subject_page_task(movie['url']))
+                asyncio.create_task(self.subject_page_task(movie['url'], dirname))
                 asyncio.create_task(self.images_scheduler(
                     movie['id'], self.TYPE_STILLS, os.path.join(dirname, '剧照'))
                 )
+                asyncio.create_task(self.images_scheduler(
+                    movie['id'], self.TYPE_POSTER, os.path.join(dirname, '海报'))
+                )
+                asyncio.create_task(self.images_scheduler(
+                    movie['id'], self.TYPE_WALLPAPER, os.path.join(dirname, '壁纸'))
+                )
+            time.sleep(1)
 
         await self.image_lock.wait()
         await self.subject_page_lock.wait()
@@ -123,6 +122,7 @@ class DoubanMovie:
             total_str = paginator.find(class_='count').string
             page_number = math.ceil(int(re.sub(r'[^\d]', '', total_str)) / 30)
         # print(page_number)
+        os.makedirs(dirname, exist_ok=True)
         for page in range(page_number):
             await self.images_page_lock.acquire()
             asyncio.create_task(self.images_page_task(movie_id, page * 30, image_type, dirname))
@@ -142,10 +142,11 @@ class DoubanMovie:
         html_doc = await self.get_raw(href)
         soup = bs4.BeautifulSoup(html_doc, 'html.parser')
         src = soup.find(class_='article').find(class_='mainphoto').find('img').get('src')
-        print(f'{src} -> {dirname}')
+        await common.save_file(self.session, src, dirname)
+        # print(f'{src} -> {dirname}')
         await self.image_lock.release()
 
-    async def subject_page_task(self, url):
+    async def subject_page_task(self, url, dirname):
         html_doc = await self.get_raw(url)
         soup = bs4.BeautifulSoup(html_doc, 'html.parser')
         title = soup.find(id='content').find('span').string
@@ -154,9 +155,6 @@ class DoubanMovie:
         if link_report:
             detail = link_report.find(property='v:summary').get_text()
         # print(title)
-        title = re.sub(r'[/:\\~*$%@&.`·?]', '_', title)
-        dirname = os.path.join(self.destination, title)
-        os.makedirs(dirname, exist_ok=True)
         with open(os.path.join(dirname, '电影简介.txt'), 'w', encoding='utf-8') as f:
             f.writelines([title, '\n', detail.strip()])
 
