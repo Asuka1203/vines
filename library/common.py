@@ -40,8 +40,8 @@ def get_file_storage(
     return _runner
 
 
-def invoke(engine, target):
+def invoke(engine):
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        engine(target).start()
+        engine.start()
     )
