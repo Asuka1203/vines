@@ -1,10 +1,8 @@
 import sys
+from datetime import datetime
 
 import aiohttp
 import asyncio
-import bs4
-
-from library import common
 
 
 if (sys.platform.startswith('win')
@@ -40,17 +38,17 @@ class PixivUser:
                 'work_category': 'illustManga',
                 'is_first_page': 1
             })
-            # soup = bs4.BeautifulSoup(html_doc, 'html.parser')
-            # img_src = soup.find('a', class_='kIEHmb').get('href')
-            print(res['works'][art_id]['profileImageUrl'])
-            print(f'https://i.pximg.net/img-original/img/')
+            dt = datetime.fromisoformat(res['works'][art_id]['createDate'])
+            print(dt.tzinfo)
             break
+            # print(f'https://i.pximg.net/img-original/img/{dt.strftime("%Y/%m/%d/%H/%M/%S")}/{art_id}_p0.png')
         await self.session.close()
 
     async def get_json(self, url, params=None):
         if params is None:
             params = {}
-        async with self.session.get(url, params=params, proxy='http://127.0.0.1:62838') as response:
+        # , proxy='http://127.0.0.1:62838'
+        async with self.session.get(url, params=params) as response:
             json = await response.json(encoding='utf-8')
             if response.status == 200 and not json['error']:
                 return json['body']
@@ -59,7 +57,7 @@ class PixivUser:
     async def get_raw(self, url, params=None):
         if params is None:
             params = {}
-        async with self.session.get(url, params=params, proxy='http://127.0.0.1:62838') as response:
+        async with self.session.get(url, params=params) as response:
             content = await response.text(encoding='utf-8')
             if response.status == 200:
                 return content
