@@ -4,4 +4,4 @@ from library import common
 
 
 if __name__ == '__main__':
-    common.invoke(PixivUser(714577))
+    common.invoke(PixivUser(714577, r'D:\pixiv'))

@@ -1,9 +1,11 @@
+import re
 import sys
 from datetime import datetime
 
 import aiohttp
 import asyncio
 
+from library import common
 
 if (sys.platform.startswith('win')
         and sys.version_info[0] == 3
@@ -20,7 +22,7 @@ class PixivUser:
     下载 pixiv 画师图片
     """
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, destination):
         self.session = aiohttp.ClientSession(headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Cookie': cookies,
@@ -28,6 +30,7 @@ class PixivUser:
             'Referer': 'https://www.pixiv.net/'
         })
         self.user_id = user_id
+        self.destination = destination
         self.URL_ARTWORKS = f'https://www.pixiv.net/ajax/user/{str(user_id)}/profile/all?lang=zh'
 
     async def start(self):
@@ -38,17 +41,20 @@ class PixivUser:
                 'work_category': 'illustManga',
                 'is_first_page': 1
             })
-            dt = datetime.fromisoformat(res['works'][art_id]['createDate'])
-            print(dt.tzinfo)
-            break
-            # print(f'https://i.pximg.net/img-original/img/{dt.strftime("%Y/%m/%d/%H/%M/%S")}/{art_id}_p0.png')
+            # dt = datetime.fromisoformat(res['works'][art_id]['createDate'])
+            # url = f'https://i.pximg.net/img-original/img/{dt.strftime("%Y/%m/%d/%H/%M/%S")}/{art_id}_p0.png'
+            url = res['works'][art_id]['url']
+            url = re.sub(r'(?<=i.pximg.net/).+?(?=/img/)', 'img-original', url)
+            url = re.sub(r'(?<=_p\d).+', '.png', url)
+            await common.save_file(self.session, url, self.destination)
+            print(url)
         await self.session.close()
 
     async def get_json(self, url, params=None):
         if params is None:
             params = {}
         # , proxy='http://127.0.0.1:62838'
-        async with self.session.get(url, params=params) as response:
+        async with self.session.get(url, params=params, proxy='http://127.0.0.1:62838') as response:
             json = await response.json(encoding='utf-8')
             if response.status == 200 and not json['error']:
                 return json['body']
@@ -57,7 +63,7 @@ class PixivUser:
     async def get_raw(self, url, params=None):
         if params is None:
             params = {}
-        async with self.session.get(url, params=params) as response:
+        async with self.session.get(url, params=params, proxy='http://127.0.0.1:62838') as response:
             content = await response.text(encoding='utf-8')
             if response.status == 200:
                 return content

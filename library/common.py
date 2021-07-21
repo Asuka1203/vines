@@ -42,7 +42,7 @@ def get_file_storage(
 
 async def save_file(session, url, destination):
     filename = os.path.basename(url)
-    async with session.get(url) as resp:
+    async with session.get(url, proxy='http://127.0.0.1:62838') as resp:
         print(os.path.join(destination, filename))
         with open(os.path.join(destination, filename), 'wb') as fd:
             while chunk := await resp.content.read(1024):
