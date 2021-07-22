@@ -9,8 +9,6 @@ class DuiTangAlbum:
     下载[堆糖]专辑
     """
 
-    _has_more_page = True
-
     def __init__(self, target: common.Target):
         """
         为请求做准备
@@ -34,10 +32,13 @@ class DuiTangAlbum:
         :return:
         """
         start = 0
-        while self._has_more_page:
+        while True:
             await self.list_task_lock.acquire()
             start = start + 1
-            asyncio.create_task(self.list_task(start * self.PRE_PAGE))
+            res = await self.list_task(start * self.PRE_PAGE)
+            await self.list_task_lock.release()
+            if not res:
+                break
 
         await self.list_task_lock.wait()
         await self.image_task_lock.wait()
@@ -57,8 +58,9 @@ class DuiTangAlbum:
             asyncio.create_task(self.image_task(obj['id']))
         # 后续没有图片的情况
         if len(data['object_list']) == 0:
-            self._has_more_page = False
-        await self.list_task_lock.release()
+            print(start)
+            return False
+        return True
 
     async def image_task(self, blog_id):
         """
@@ -69,6 +71,7 @@ class DuiTangAlbum:
         data = await self.get_json(self.URL_BLOG + str(blog_id))
         if data is not None:
             await self.file_storage(data['photo']['path'])
+            print(data['photo']['path'])
         await self.image_task_lock.release()
 
     async def get_json(self, url):
